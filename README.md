@@ -10,7 +10,7 @@ $ python SNDRAGAN.py --img_path <img_path> --out_dir <output_dir_path>
 - --img_path  :<img_path>には使いたい画像を保管しているディレクトリを指定する。(.pngまで指定する必要はない)
 - --out_dir   :<output_dir_path> は結果の出力ディレクトリの指定をする。
 
-その他の設定
+任意の設定
 - --size      :Generatorの100次元から生成する際のサイズを設定する。64x64の場合は4、128x128のときは8を指定する。デフォルトは4。
 - --n_epochs  :エポック数の設定をする。デフォルトは1000。10000epoch以上にした際、コードの書き換えが必要。
 - --interval  :何枚置きに画像を保存するか設定をする。デフォルトは10。
