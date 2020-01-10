@@ -1,5 +1,11 @@
 # DRAGAN
 論文の[リンク](https://arxiv.org/abs/1705.07215)です。
+# 環境
+python3.6.9
+pytorch1.2.0
+torchvision0.4.0
+cloudpikle1.2.2
+matplotlib3.1.1    
 ## Usage
 
 
