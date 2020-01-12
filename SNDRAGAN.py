@@ -54,11 +54,13 @@ img_path = glob.glob(args.img_path+"/*.png")
 if not os.path.exists("./images/"):
     os.mkdir("./images/")
 if not os.path.exists("./model/"):
-    os.mkdir("./model/")    
+    os.mkdir("./model/")
 
 image_out_dir = './images/'+out_dir
 if not os.path.exists(image_out_dir):
     os.mkdir(image_out_dir)
+if not os.path.exists(f"./images/{out_dir}/loss"):
+    os.mkdir(f"./images/{out_dir}/loss")
 model_dir = 'model/'+out_dir
 if not os.path.exists(model_dir):
     os.mkdir(model_dir)
@@ -295,26 +297,26 @@ for epoch in range(n_epochs):
         g_loss_list.append(loss_gen.item())
 
         if epoch%interval==0 and i ==0:
-            with open(f'{discriminator_model_dir}dis_model_epoch{epoch}.pkl', 'wb') as f:
+            with open(f'{discriminator_model_dir}dis_model_.pkl', 'wb') as f:
                 cloudpickle.dump(dis_model, f)
-            with open(f'{generator_model_dir}gen_model_epoch{epoch}.pkl', 'wb') as f:
+            with open(f'{generator_model_dir}gen_model_epoch.pkl', 'wb') as f:
                 cloudpickle.dump(gen_model, f)
             gen_model.eval()
             with torch.no_grad():
                 generated_img = gen_model(check_z)
-            save_image(generated_img,"images/"+out_dir+f"/{epoch:04d}.png",nrow=10)
+            save_image(generated_img,f"images/{out_dir}/{epoch:04d}.png",nrow=10)
     calc_loss_dis = sum_dis_loss/len(img_path)
     calc_loss_gen = sum_gen_loss/len(img_path)
     print(f'epoch : {epoch} dis_loss : {calc_loss_dis:.4f} gen_loss : {calc_loss_gen:.4f}')
-    with open(f'{image_out_dir}/result.txt', 'a') as f:
-        f.write(f"epoch             :{epoch}\ndiscriminator loss:{sum_dis_loss/len(img_path):.6f}\ngenerator loss    :{sum_gen_loss/len(img_path):.6f}\n")
+    with open(f'./images/{out_dir}/loss/result.txt', 'a') as f:
+        f.write(f"epoch             :{epoch}\ndiscriminator loss:{calc_loss_dis:.6f}\ngenerator loss    :{calc_loss_gen:.6f}\n")
 # plot learning curve
 plt.figure()
-plt.plot(range(len(d_loss_list))[::19], d_loss_list[::19], 'r-', label='dis_loss')
-plt.plot(range(len(g_loss_list))[::19], g_loss_list[::19], 'b-', label='gen_loss')
+plt.plot(range(len(d_loss_list))[::10], d_loss_list[::10], 'r-', label='dis_loss',alpha=0.5)
+plt.plot(range(len(g_loss_list))[::10], g_loss_list[::10], 'b-', label='gen_loss',alpha=0.5)
 plt.legend()
-plt.xlabel('epoch')
+plt.xlabel('iterator')
 plt.ylabel('loss')
 plt.grid()
-plt.savefig('loss.png')
+plt.savefig(f"./images/{out_dir}/loss/loss.png")
 
