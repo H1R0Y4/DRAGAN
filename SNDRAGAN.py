@@ -216,6 +216,8 @@ labels = Tensor(batch_size,1).to(device)
 # ----------
 #  Training
 # ----------
+d_iter_loss_list = []
+g_iter_loss_list = []
 d_loss_list = []
 g_loss_list = []
 for epoch in range(n_epochs):
@@ -293,8 +295,8 @@ for epoch in range(n_epochs):
 
         sum_dis_loss += loss_dis.item()
         sum_gen_loss += loss_gen.item()
-        d_loss_list.append(loss_dis.item())
-        g_loss_list.append(loss_gen.item())
+        d_iter_loss_list.append(loss_dis.item())
+        g_iter_loss_list.append(loss_gen.item())
 
         if epoch%interval==0 and i ==0:
             with open(f'{discriminator_model_dir}dis_model_.pkl', 'wb') as f:
@@ -307,16 +309,27 @@ for epoch in range(n_epochs):
             save_image(generated_img,f"images/{out_dir}/{epoch:04d}.png",nrow=10)
     calc_loss_dis = sum_dis_loss/len(img_path)
     calc_loss_gen = sum_gen_loss/len(img_path)
+    d_loss_list.append(calc_loss_dis)
+    g_loss_list.append(calc_loss_gen)
     print(f'epoch : {epoch} dis_loss : {calc_loss_dis:.4f} gen_loss : {calc_loss_gen:.4f}')
     with open(f'./images/{out_dir}/loss/result.txt', 'a') as f:
         f.write(f"epoch             :{epoch}\ndiscriminator loss:{calc_loss_dis:.6f}\ngenerator loss    :{calc_loss_gen:.6f}\n")
 # plot learning curve
-plt.figure()
-plt.plot(range(len(d_loss_list))[::10], d_loss_list[::10], 'r-', label='dis_loss',alpha=0.5)
-plt.plot(range(len(g_loss_list))[::10], g_loss_list[::10], 'b-', label='gen_loss',alpha=0.5)
+iter_loss = plt.figure()
+plt.plot(range(len(d_iter_loss_list))[::10], d_iter_loss_list[::10], 'r-', label='dis_loss',alpha=0.5)
+plt.plot(range(len(g_iter_loss_list))[::10], g_iter_loss_list[::10], 'b-', label='gen_loss',alpha=0.5)
 plt.legend()
 plt.xlabel('iterator')
 plt.ylabel('loss')
 plt.grid()
-plt.savefig(f"./images/{out_dir}/loss/loss.png")
+iter_loss.savefig(f"./images/{out_dir}/loss/iter_loss.png")
+# plot learning curve
+epoch_loss = plt.figure()
+plt.plot(range(n_epochs), d_loss_list, 'r-', label='dis_loss',alpha=0.5)
+plt.plot(range(n_epochs), g_loss_list, 'b-', label='gen_loss',alpha=0.5)
+plt.legend()
+plt.xlabel('epoch')
+plt.ylabel('loss')
+plt.grid()
+epoch_loss.savefig(f"./images/{out_dir}/loss/epoch_loss.png")
 
