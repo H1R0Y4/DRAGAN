@@ -3,6 +3,7 @@ from torch import nn
 
 import argparse
 import os
+import sys
 import numpy as np
 import math
 import glob
@@ -45,7 +46,7 @@ lr              = 1e-4
 b1              = 0.5
 b2              = 0.999
 seed            = 123
-C               = 10.0 #初期論文では0.5だったが、最終版v5では10に
+C               = 0.5 #初期論文では0.5だったが、最終版v5では10に
 latent_dim      = 100
 lambda_gp       = 10.0 #初期論文から変更なし
 
@@ -131,19 +132,19 @@ class Discriminator(nn.Module):
     def __init__(self,base = 64):
         super(Discriminator,self).__init__()
         self.conv_block1 = nn.Sequential(
-            nn.utils.spectral_norm(nn.Conv2d(3,base,4,2,1)),
+            nn.Conv2d(3,base,4,2,1),
             nn.LeakyReLU()
         )
         self.conv_block2 = nn.Sequential(   
-            nn.utils.spectral_norm(nn.Conv2d(base,base * 2,4,2,1)),
+            nn.Conv2d(base,base * 2,4,2,1),
             nn.LeakyReLU()
         )
         self.conv_block3 = nn.Sequential(
-            nn.utils.spectral_norm(nn.Conv2d(base * 2,base * 4,4,2,1)),
+            nn.Conv2d(base * 2,base * 4,4,2,1),
             nn.LeakyReLU()
         )
         self.conv_block4 = nn.Sequential(
-            nn.utils.spectral_norm(nn.Conv2d(base * 4,base * 8,4,2,1)),
+            nn.Conv2d(base * 4,base * 8,4,2,1),
             nn.LeakyReLU()
         )
 #         self.conv_block5 = nn.Sequential(
@@ -222,6 +223,7 @@ d_loss_list = []
 g_loss_list = []
 def main():
     for epoch in range(n_epochs):
+        
         sum_dis_loss = 0.0
         sum_gen_loss = 0.0
         for i, (imgs,idx) in enumerate(dataloader):
@@ -233,48 +235,48 @@ def main():
             # -----------------
             #  Train Discriminator
             # -----------------
-            for k in range(4):
-                dis_model.zero_grad()
 
-                #真の画像を判定
-                y_real = dis_model(x_dis)
+            dis_model.zero_grad()
 
-                #偽の画像を生成して判定
-                z.data.normal_(0, 1)
-                x_fake = gen_model(z).detach()
-                y_fake = dis_model(x_fake)
+            #真の画像を判定
+            y_real = dis_model(x_dis)
 
-                # 真の画像にノイズを混ぜて、gradient_penaltyを計算
+            #偽の画像を生成して判定
+            z.data.normal_(0, 1)
+            x_fake = gen_model(z).detach()
+            y_fake = dis_model(x_fake)
 
-                std_data = x_dis.std(dim=0, keepdims = True).to(device)
+            # 真の画像にノイズを混ぜて、gradient_penaltyを計算
 
-                rnd_x = torch.rand(x_dis.shape).to(device)
+            std_data = x_dis.std(dim=0, keepdims = True).to(device)
 
-                x_perturbed = Tensor(x_dis + C *std_data*rnd_x).to(device)
-                x_perturbed = Variable(x_perturbed, requires_grad=True)
+            rnd_x = torch.rand(x_dis.shape).to(device)
 
-                y_perturbed = dis_model(x_perturbed)
+            x_perturbed = Tensor(x_dis + C *std_data*rnd_x).to(device)
+            x_perturbed = Variable(x_perturbed, requires_grad=True)
 
-                fake = Variable(Tensor(imgs.shape[0], 1).fill_(1.0), requires_grad=False)
+            y_perturbed = dis_model(x_perturbed)
 
-                gradients = autograd.grad(
-                    outputs=y_perturbed,
-                    inputs=x_perturbed,
-                    grad_outputs=fake,
-                    create_graph=True,
-                    retain_graph=True,
-                    only_inputs=True,
-                )[0]
+            fake = Variable(Tensor(imgs.shape[0], 1).fill_(1.0), requires_grad=False)
 
-                #損失を計算
-                ##gradient_penaltyの損失
-                grad = torch.sqrt(gradients.reshape(len(gradients), -1).norm(dim=1)**2)
-                loss_gp = lambda_gp * F.mse_loss(grad,torch.ones_like(grad))
+            gradients = autograd.grad(
+                outputs=y_perturbed,
+                inputs=x_perturbed,
+                grad_outputs=fake,
+                create_graph=True,
+                retain_graph=True,
+                only_inputs=True,
+            )[0]
 
-                loss_dis = loss_func_dcgan_dis_real(y_real) + loss_func_dcgan_dis_fake(y_fake) + loss_gp
+            #損失を計算
+            ##gradient_penaltyの損失
+            grad = torch.sqrt(gradients.reshape(len(gradients), -1).norm(dim=1)**2)
+            loss_gp = lambda_gp * F.mse_loss(grad,torch.ones_like(grad))
 
-                loss_dis.backward()
-                optimizer_D.step()
+            loss_dis = loss_func_dcgan_dis_real(y_real) + loss_func_dcgan_dis_fake(y_fake) + loss_gp
+
+            loss_dis.backward()
+            optimizer_D.step()
 
             # -----------------
             #  Train Generator
@@ -333,7 +335,7 @@ def main():
     plt.ylabel('loss')
     plt.grid()
     epoch_loss.savefig(f"./images/{out_dir}/loss/epoch_loss.png")
-
+    
 if __name__ == "__main__":
     try:
         main()
